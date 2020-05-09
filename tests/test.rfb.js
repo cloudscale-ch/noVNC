@@ -2724,56 +2724,61 @@ describe('Remote Frame Buffer Protocol Client', function () {
         });
 
         describe('Mouse event handlers', function () {
+            beforeEach(function () {
+                sinon.spy(RFB.messages, 'pointerEvent');
+            });
+            afterEach(function () {
+                RFB.messages.pointerEvent.restore();
+            });
+
             it('should not send button messages in view-only mode', function () {
                 client._viewOnly = true;
-                sinon.spy(client._sock, 'flush');
                 client._handleMouseButton(0, 0, 1, 0x001);
-                expect(client._sock.flush).to.not.have.been.called;
+                expect(RFB.messages.pointerEvent).to.not.have.been.called;
             });
 
             it('should not send movement messages in view-only mode', function () {
                 client._viewOnly = true;
-                sinon.spy(client._sock, 'flush');
                 client._handleMouseMove(0, 0);
-                expect(client._sock.flush).to.not.have.been.called;
+                expect(RFB.messages.pointerEvent).to.not.have.been.called;
+            });
+
+            it('should not send pointer events when nothing changed', function () {
+                client._handleMouseMove(1, 1);
+                client._handleMouseMove(1, 1);
+                expect(RFB.messages.pointerEvent).to.have.been.calledOnce;
             });
 
             it('should send a pointer event on mouse button presses', function () {
                 client._handleMouseButton(10, 12, 1, 0x001);
-                const pointer_msg = {_sQ: new Uint8Array(6), _sQlen: 0, flush: () => {}};
-                RFB.messages.pointerEvent(pointer_msg, 10, 12, 0x001);
-                expect(client._sock).to.have.sent(pointer_msg._sQ);
+                expect(RFB.messages.pointerEvent).to.have.been.calledOnce;
             });
 
             it('should send a mask of 1 on mousedown', function () {
-                client._handleMouseButton(10, 12, 1, 0x001);
-                const pointer_msg = {_sQ: new Uint8Array(6), _sQlen: 0, flush: () => {}};
-                RFB.messages.pointerEvent(pointer_msg, 10, 12, 0x001);
-                expect(client._sock).to.have.sent(pointer_msg._sQ);
+                client._handleMouseButton(11, 13, 1, 0x001);
+                expect(RFB.messages.pointerEvent).to.have.been.calledWith(
+                    client._sock, 11, 13, 0x001);
             });
 
             it('should send a mask of 0 on mouseup', function () {
                 client._mouse_buttonMask = 0x001;
-                client._handleMouseButton(10, 12, 0, 0x001);
-                const pointer_msg = {_sQ: new Uint8Array(6), _sQlen: 0, flush: () => {}};
-                RFB.messages.pointerEvent(pointer_msg, 10, 12, 0x000);
-                expect(client._sock).to.have.sent(pointer_msg._sQ);
+                client._handleMouseButton(105, 120, 0, 0x001);
+                expect(RFB.messages.pointerEvent).to.have.been.calledWith(
+                    client._sock, 105, 120, 0x000);
             });
 
             it('should send a pointer event on mouse movement', function () {
-                client._handleMouseMove(10, 12);
-                const pointer_msg = {_sQ: new Uint8Array(6), _sQlen: 0, flush: () => {}};
-                RFB.messages.pointerEvent(pointer_msg, 10, 12, 0x000);
-                expect(client._sock).to.have.sent(pointer_msg._sQ);
+                client._handleMouseMove(100, 200);
+                expect(RFB.messages.pointerEvent).to.have.been.calledOnceWith(
+                    client._sock, 100, 200, 0x000);
             });
 
             it('should set the button mask so that future mouse movements use it', function () {
                 client._handleMouseButton(10, 12, 1, 0x010);
                 client._handleMouseMove(13, 9);
-                const pointer_msg = {_sQ: new Uint8Array(12), _sQlen: 0, flush: () => {}};
-                RFB.messages.pointerEvent(pointer_msg, 10, 12, 0x010);
-                RFB.messages.pointerEvent(pointer_msg, 13, 9, 0x010);
-                expect(client._sock).to.have.sent(pointer_msg._sQ);
+                expect(RFB.messages.pointerEvent).to.have.been.calledTwice;
+                expect(RFB.messages.pointerEvent).to.have.been.calledWith(
+                    client._sock, 13, 9, 0x010);
             });
         });
 

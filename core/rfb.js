@@ -134,6 +134,7 @@ export default class RFB extends EventTargetMixin {
 
         // Mouse state
         this._mouse_buttonMask = 0;
+        this._mouse_lastPos = {};
         this._viewportDragging = false;
         this._viewportDragPos = {};
         this._viewportHasMoved = false;
@@ -849,7 +850,11 @@ export default class RFB extends EventTargetMixin {
         if (this._viewOnly) { return; } // View only, skip mouse events
 
         if (this._rfb_connection_state !== 'connected') { return; }
-        RFB.messages.pointerEvent(this._sock, this._display.absX(x), this._display.absY(y), this._mouse_buttonMask);
+
+        this._mouse_lastPos = {'x': x, 'y': y};
+
+        RFB.messages.pointerEvent(this._sock, this._display.absX(x),
+                                  this._display.absY(y), this._mouse_buttonMask);
     }
 
     _handleMouseMove(x, y) {
@@ -872,7 +877,14 @@ export default class RFB extends EventTargetMixin {
         if (this._viewOnly) { return; } // View only, skip mouse events
 
         if (this._rfb_connection_state !== 'connected') { return; }
-        RFB.messages.pointerEvent(this._sock, this._display.absX(x), this._display.absY(y), this._mouse_buttonMask);
+
+        if ((x === this._mouse_lastPos.x) &&
+            (y === this._mouse_lastPos.y)) { return; }
+
+        this._mouse_lastPos = { 'x': x, 'y': y };
+
+        RFB.messages.pointerEvent(this._sock, this._display.absX(x),
+                                  this._display.absY(y), this._mouse_buttonMask);
     }
 
     // Message Handlers
