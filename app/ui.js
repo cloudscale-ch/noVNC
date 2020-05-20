@@ -102,12 +102,6 @@ var UI = {
         UI.keyboardinputReset();
 
         UI.openControlbar();
-
-        // Show the connect panel on first load unless autoconnecting
-        if (!autoconnect) {
-            UI.openConnectPanel();
-        }
-
         UI.updateViewClip();
 
         UI.updateVisualState();
@@ -115,13 +109,8 @@ var UI = {
         document.getElementById('noVNC_setting_host').focus();
         document.documentElement.classList.remove("noVNC_loading");
 
-        var autoconnect = WebUtil.getConfigVar('autoconnect', false);
-        if (autoconnect === 'true' || autoconnect == '1') {
-            autoconnect = true;
-            UI.connect();
-        } else {
-            autoconnect = false;
-        }
+        // Always autoconnect
+        UI.connect();
 
         if (typeof callback === "function") {
             callback(UI.rfb);
